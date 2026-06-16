@@ -29,7 +29,8 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(distPath))
 
   // SPA fallback: qualquer rota não-API retorna index.html
-  app.get('*', (req, res) => {
+  // Em Express 5, o app.use sem path é a forma mais segura de fazer catch-all
+  app.use((req, res) => {
     res.sendFile(path.join(distPath, 'index.html'))
   })
 }
