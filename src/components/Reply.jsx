@@ -1,34 +1,31 @@
 import { useState } from 'react'
 
-export default function Post({
-  postNumber,
-  subject,
-  author = 'Anonymous',
-  tripcode,
-  date,
-  imageAlt,
-  isOP = false,
-  children,
-}) {
+export default function Reply({ item, opPostNumber }) {
   const [checked, setChecked] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const handlePostNumberClick = (e) => {
     e.preventDefault()
-    // Copy post number to clipboard
-    const text = `>>${postNumber}`
+    const text = `>>${item.postNumber}`
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     }).catch(() => {
-      // Fallback: select the text
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     })
   }
 
+  const handleQuoteLinkClick = () => {
+    // Scroll to the OP post
+    const opElement = document.getElementById('top')
+    if (opElement) {
+      opElement.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
-    <div className={`post ${isOP ? 'post--op' : ''} ${checked ? 'post--selected' : ''}`}>
+    <div className={`reply ${checked ? 'post--selected' : ''}`}>
       <div className="post__header">
         <input
           type="checkbox"
@@ -37,31 +34,34 @@ export default function Post({
           onChange={() => setChecked(!checked)}
           aria-label="Selecionar post"
         />
-        {subject && <span className="post__subject">{subject}</span>}
-        <span className="post__name">{author}</span>
-        {tripcode && <span className="post__tripcode">{tripcode}</span>}
-        <span className="post__date">{date}</span>
+        <span className="post__name">Anonymous</span>
+        <span className="post__date">{item.date}</span>
         <a
-          href={`#post-${postNumber}`}
+          href={`#post-${item.postNumber}`}
           className="post__number"
           onClick={handlePostNumberClick}
           title={copied ? '✅ Copiado!' : 'Clique para copiar >>número'}
         >
-          No.{postNumber}
+          No.{item.postNumber}
           {copied && <span className="post__copied-badge">Copiado!</span>}
+        </a>
+        <a
+          href="#top"
+          className="quote-link"
+          style={{ marginLeft: '4px' }}
+          onClick={(e) => { e.preventDefault(); handleQuoteLinkClick() }}
+          title="Ir para o post original"
+        >
+          &gt;&gt;{opPostNumber}
         </a>
       </div>
       <div className="post__body">
-        {imageAlt && (
-          <div className="post__image-container">
-            <div className="post__image">{imageAlt}</div>
-            <div className="post__image-info">
-              (42KB, 320x240, foto_ruim.jpg)
-            </div>
-          </div>
-        )}
         <div className="post__text">
-          {children}
+          <div style={{ marginBottom: '6px' }}>
+            <span className="rank-badge">#{item.rank}</span>
+            <span className="rank-title">{item.title}</span>
+          </div>
+          <p>{item.text}</p>
         </div>
       </div>
     </div>

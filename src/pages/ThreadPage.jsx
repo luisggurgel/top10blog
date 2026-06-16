@@ -1,13 +1,47 @@
 import { useParams, Link } from 'react-router-dom'
-import threadsData from '../data/threads.json'
+import { useEffect, useState } from 'react'
 import Window from '../components/Window'
 import Post from '../components/Post'
+import Reply from '../components/Reply'
+import VoteButtons from '../components/VoteButtons'
+import CommentSection from '../components/CommentSection'
+import { api } from '../api'
 
 export default function ThreadPage() {
   const { id } = useParams()
-  const thread = threadsData.find((t) => t.id === parseInt(id))
+  const [thread, setThread] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  if (!thread) {
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    setLoading(true)
+    setError(false)
+
+    api.get(`/threads/${id}`)
+      .then((data) => {
+        const t = data.thread ?? data
+        setThread(t)
+        document.title = `${t.title} - ZeroBerto Top 10 Blog`
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+
+    return () => {
+      document.title = 'ZeroBerto Top 10 Blog - As listas mais aleatórias da internet!!'
+    }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="loading-state">
+        <div className="loading-state__spinner" />
+        <div>Carregando thread... (a internet discada é lenta, paciência)</div>
+      </div>
+    )
+  }
+
+  if (error || !thread) {
     return (
       <Window title="Erro - Microsoft Internet Explorer">
         <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -50,6 +84,12 @@ export default function ThreadPage() {
         <div className="board-title" style={{ fontSize: '20px' }}>
           /zb/ - {thread.title}
         </div>
+        <VoteButtons
+          targetType="thread"
+          targetId={thread.id}
+          initialScore={thread.score ?? 0}
+          initialUserVote={thread.userVote ?? 0}
+        />
       </div>
 
       <div id="top"></div>
@@ -74,35 +114,14 @@ export default function ThreadPage() {
         {/* Each top 10 item as a reply */}
         <div className="reply-container">
           {thread.items.map((item) => (
-            <div key={item.rank} className="reply">
-              <div className="post__header">
-                <input type="checkbox" className="post__checkbox" readOnly />
-                <span className="post__name">Anonymous</span>
-                <span className="post__date">{item.date}</span>
-                <a href="#" className="post__number" onClick={(e) => e.preventDefault()}>
-                  No.{item.postNumber}
-                </a>
-                <span className="quote-link" style={{ marginLeft: '4px' }}>
-                  &gt;&gt;{thread.postNumber}
-                </span>
-              </div>
-              <div className="post__body">
-                <div className="post__text">
-                  <div style={{ marginBottom: '6px' }}>
-                    <span className="rank-badge">#{item.rank}</span>
-                    <span className="rank-title">{item.title}</span>
-                  </div>
-                  <p>{item.text}</p>
-                </div>
-              </div>
-            </div>
+            <Reply key={item.rank} item={item} opPostNumber={thread.postNumber} />
           ))}
         </div>
 
         {/* Thread stats */}
         <div style={{ padding: '8px', fontSize: '11px', color: '#707070', borderTop: '1px solid #b7c5d9', marginTop: '8px' }}>
-          {thread.replyCount} respostas e {thread.imageCount} imagens omitidas.
-          <a href="#" onClick={(e) => e.preventDefault()} style={{ marginLeft: '4px' }}>
+          {thread.replyCount ?? 0} respostas e {thread.imageCount ?? 0} imagens omitidas.
+          <a href="#comments" onClick={(e) => { e.preventDefault(); document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' }) }} style={{ marginLeft: '4px' }}>
             Clique aqui para ver tudo (mentira, tá tudo aí já)
           </a>
         </div>
@@ -116,12 +135,8 @@ export default function ThreadPage() {
         [<a href="#top">Voltar pro Topo</a>]
       </div>
 
-      {/* Under construction */}
-      <div className="under-construction">
-        🚧🚧🚧 SEÇÃO DE COMENTÁRIOS EM CONSTRUÇÃO 🚧🚧🚧
-        <br />
-        (na verdade não vai ter comentários nunca hahaha)
-      </div>
+      {/* Comment Section (replaces the old "EM CONSTRUÇÃO" banner) */}
+      <CommentSection threadId={id} />
     </>
   )
 }

@@ -17,7 +17,13 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // ── Carregar dados ──
-const threads = JSON.parse(readFileSync(join(__dirname, 'src/data/threads.json'), 'utf-8'))
+let threads
+try {
+  threads = JSON.parse(readFileSync(join(__dirname, 'src/data/threads.json'), 'utf-8'))
+} catch (err) {
+  console.error('❌ Erro ao ler threads.json:', err.message)
+  process.exit(1)
+}
 const css = readFileSync(join(__dirname, 'src/index.css'), 'utf-8')
 
 // ── Criar diretório de saída ──
@@ -46,7 +52,7 @@ function formatText(text) {
 }
 
 // ── Template: header HTML ──
-function htmlHead(title) {
+function htmlHead(title, cssPath = 'style.css') {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -56,7 +62,7 @@ function htmlHead(title) {
   <meta name="description" content="ZeroBerto Top 10 Blog - As listas mais aleatórias e inúteis da internet brasileira.">
   <title>${escapeHtml(title)} - ZeroBerto Top 10 Blog</title>
   <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="${cssPath}">
 </head>
 <body>`
 }
@@ -223,7 +229,7 @@ function buildCatalog() {
 
 // ── Gerar thread pages ──
 function buildThread(thread) {
-  let html = htmlHead(thread.title)
+  let html = htmlHead(thread.title, '../style.css')
   html += browserChrome()
 
   // Nav
@@ -330,12 +336,8 @@ function buildThread(thread) {
 
 // ── Copiar CSS ──
 function buildCSS() {
-  // Copiar o CSS trocando referências relativas se necessário
   writeFileSync(join(outDir, 'style.css'), css)
-
-  // Copiar também pra subdiretório thread/
-  writeFileSync(join(outDir, 'thread', 'style.css'), css)
-
+  // No longer copying to thread/ subdirectory
   console.log('✅ style.css copiado')
 }
 
